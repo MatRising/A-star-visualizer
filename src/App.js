@@ -165,7 +165,7 @@ function App() {
     //openSet.current = [start.current];
     closedSet.current = [];
     path.current = [];
-  }, [reset]);
+  }, [reset, dim]);
   const removeFromOpenSet = (passedSet, passedIdx) => {
     let temp = passedSet;
     let idx = temp.findIndex(
