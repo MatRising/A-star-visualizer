@@ -385,7 +385,7 @@ function App() {
           </Button>
           <Button
             start
-            disabled={isFinished}
+            disabled={isFinished || end.current === undefined}
             onClick={() => setisRunning(!isRunning)}
           >
             {isRunning ? "Stop" : "Start"}
