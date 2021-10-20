@@ -43,6 +43,7 @@ const NaviWrapper = styled.div`
   background-color: rgba(0, 0, 0, 0.8);
   margin: 10px;
   cursor: grab;
+  z-index: 1;
 `;
 const Menu = styled.div`
   position: absolute;
@@ -64,13 +65,14 @@ const Patty = styled.div`
   margin: 2px 0;
 `;
 const Button = styled.button`
-  width: ${(props) => (props.minimize ? "30px" : "100px")};
+  width: ${(props) =>
+    props.minimize ? "30px" : props.w < 400 ? "80px" : "100px"};
   height: 30px;
   background-color: ${(props) =>
-    props.start ? "#00A170" : props.stop ? "#D2386C" : "#9BB7D4"};
+    props.start ? "#00A170" : props.stop ? "#D2386C" : "#008CBA"};
   border: 1px solid transparent;
   color: white;
-  margin: 5px;
+  margin: 3px;
   cursor: pointer;
   align-self: ${(props) => (props.minimize ? "flex-end" : "")};
 `;
@@ -96,6 +98,7 @@ function App() {
   const [touchStart, settouchStart] = useState({ x: 0, y: 0 });
   const [touchEnd, settouchEnd] = useState({ x: 0, y: 0 });
   const [helper, setHelper] = useState(false);
+  const [isAddingWalls, setisAddingWalls] = useState(true);
   let path = useRef([]);
   let start = useRef(undefined);
   let end = useRef(undefined);
@@ -160,8 +163,6 @@ function App() {
       }
     }
 
-    console.log(grid);
-
     setGridState(grid);
     end.current = undefined;
     start.current = undefined;
@@ -174,11 +175,14 @@ function App() {
     //handling mobile swipes directions and calling addWallMobile
     // width - 100(for margin) + dim(to accout for border)/dim
     let cellSize = (width - 100 + dim * 2) / dim;
+
+    const precision =
+      dim === 10 ? cellSize : dim === 20 ? cellSize * 2 : cellSize * 3;
     const isIntercardinal =
       Math.abs(
         Math.abs(touchStart.x - touchEnd.x) -
           Math.abs(touchStart.y - touchEnd.y)
-      ) < cellSize;
+      ) < precision;
 
     // handling mobile swipes
     if (helper === true) {
@@ -193,9 +197,7 @@ function App() {
               touchStart.x + cellSize * counter,
               touchStart.y - cellSize * counter
             );
-            console.log(`x cords: ${touchStart.x + cellSize}`);
-            console.log(`y cords: ${touchStart.y - cellSize}`);
-            console.log(elementMouseIsOver);
+
             elementMouseIsOver.click();
             counter = counter + 1;
           }
@@ -211,9 +213,7 @@ function App() {
               touchStart.x - cellSize * counter,
               touchStart.y + cellSize * counter
             );
-            console.log(`x cords: ${touchStart.x - cellSize}`);
-            console.log(`y cords: ${touchStart.y - cellSize}`);
-            console.log(elementMouseIsOver);
+
             elementMouseIsOver.click();
             counter = counter + 1;
           }
@@ -229,9 +229,6 @@ function App() {
               touchStart.x - cellSize * counter,
               touchStart.y - cellSize * counter
             );
-            console.log(`x cords: ${touchStart.x - cellSize}`);
-            console.log(`y cords: ${touchStart.y - cellSize}`);
-            console.log(elementMouseIsOver);
             elementMouseIsOver.click();
             counter = counter + 1;
           }
@@ -247,9 +244,7 @@ function App() {
               touchStart.x + cellSize * counter,
               touchStart.y + cellSize * counter
             );
-            console.log(`x cords: ${touchStart.x + cellSize}`);
-            console.log(`y cords: ${touchStart.y + cellSize}`);
-            console.log(elementMouseIsOver);
+
             elementMouseIsOver.click();
             counter = counter + 1;
           }
@@ -268,7 +263,6 @@ function App() {
                 touchStart.x,
                 i
               );
-              console.log(elementMouseIsOver);
               elementMouseIsOver.click();
             }
           } else {
@@ -278,7 +272,6 @@ function App() {
                 touchStart.x,
                 i
               );
-              console.log(elementMouseIsOver);
               elementMouseIsOver.click();
             }
           }
@@ -291,7 +284,6 @@ function App() {
                 i,
                 touchStart.y
               );
-              console.log(elementMouseIsOver);
               elementMouseIsOver.click();
             }
           } else {
@@ -301,7 +293,6 @@ function App() {
                 i,
                 touchStart.y
               );
-              console.log(elementMouseIsOver);
               elementMouseIsOver.click();
             }
           }
@@ -313,18 +304,19 @@ function App() {
       setHelper(true);
     }
   }, [touchEnd]);
+
   const addWallMobile = (i, j) => {
     if (!isRunning && helper) {
       let items = [...gridState];
       let item = gridState[i][j];
-      item.isWall = true;
+      item.isWall = isAddingWalls;
       items[i][j] = item;
       if (i - 1 >= 0) {
         let idx = items[i - 1][j].neighbours.findIndex(
           (el) => el.i === i && el.j === j
         );
         if (!items[i - 1][j].neighbours[idx].isWall) {
-          items[i - 1][j].neighbours[idx].isWall = true;
+          items[i - 1][j].neighbours[idx].isWall = isAddingWalls;
         }
       }
       if (j + 1 < dim) {
@@ -332,7 +324,7 @@ function App() {
           (el) => el.i === i && el.j === j
         );
         if (!items[i][j + 1].neighbours[idx].isWall) {
-          items[i][j + 1].neighbours[idx].isWall = true;
+          items[i][j + 1].neighbours[idx].isWall = isAddingWalls;
         }
       }
       if (i + 1 < dim) {
@@ -340,7 +332,7 @@ function App() {
           (el) => el.i === i && el.j === j
         );
         if (!items[i + 1][j].neighbours[idx].isWall) {
-          items[i + 1][j].neighbours[idx].isWall = true;
+          items[i + 1][j].neighbours[idx].isWall = isAddingWalls;
         }
       }
       if (j - 1 >= 0) {
@@ -348,7 +340,7 @@ function App() {
           (el) => el.i === i && el.j === j
         );
         if (!items[i][j - 1].neighbours[idx].isWall) {
-          items[i][j - 1].neighbours[idx].isWall = true;
+          items[i][j - 1].neighbours[idx].isWall = isAddingWalls;
         }
       }
       setGridState(items);
@@ -374,14 +366,14 @@ function App() {
         } else {
           let items = [...gridState];
           let item = gridState[i][j];
-          item.isWall = true;
+          item.isWall = isAddingWalls;
           items[i][j] = item;
           if (i - 1 >= 0) {
             let idx = items[i - 1][j].neighbours.findIndex(
               (el) => el.i === i && el.j === j
             );
             if (!items[i - 1][j].neighbours[idx].isWall) {
-              items[i - 1][j].neighbours[idx].isWall = true;
+              items[i - 1][j].neighbours[idx].isWall = isAddingWalls;
             }
           }
           if (j + 1 < dim) {
@@ -389,7 +381,7 @@ function App() {
               (el) => el.i === i && el.j === j
             );
             if (!items[i][j + 1].neighbours[idx].isWall) {
-              items[i][j + 1].neighbours[idx].isWall = true;
+              items[i][j + 1].neighbours[idx].isWall = isAddingWalls;
             }
           }
           if (i + 1 < dim) {
@@ -397,7 +389,7 @@ function App() {
               (el) => el.i === i && el.j === j
             );
             if (!items[i + 1][j].neighbours[idx].isWall) {
-              items[i + 1][j].neighbours[idx].isWall = true;
+              items[i + 1][j].neighbours[idx].isWall = isAddingWalls;
             }
           }
           if (j - 1 >= 0) {
@@ -405,7 +397,7 @@ function App() {
               (el) => el.i === i && el.j === j
             );
             if (!items[i][j - 1].neighbours[idx].isWall) {
-              items[i][j - 1].neighbours[idx].isWall = true;
+              items[i][j - 1].neighbours[idx].isWall = isAddingWalls;
             }
           }
           setGridState(items);
@@ -571,61 +563,73 @@ function App() {
           <Button minimize={true} onClick={() => setisOpen(false)}>
             X
           </Button>
-          <Button
-            start
-            disabled={isFinished || end.current === undefined}
-            onClick={() => setisRunning(!isRunning)}
-          >
-            {isRunning ? "Stop" : "Start"}
-          </Button>
-          <Button
-            stop
-            onClick={() => {
-              setReset(!reset);
-              setisFinished(false);
-              setisRunning(false);
-              setHelper(false);
-            }}
-          >
-            Reset
-          </Button>
-          <div style={{ color: "white" }}>
-            <p>Left Click make wall</p>
-            <p>Right Click break wall</p>
+          <div className="flex-grouping">
+            <Button
+              w={width}
+              start
+              disabled={isFinished || end.current === undefined}
+              onClick={() => setisRunning(!isRunning)}
+            >
+              {isRunning ? "Stop" : "Start"}
+            </Button>
+            <Button w={width} onClick={() => setisAddingWalls(!isAddingWalls)}>
+              {isAddingWalls ? "RM Walls" : "Add Walls"}
+            </Button>
+            <Button
+              w={width}
+              stop
+              onClick={() => {
+                setReset(!reset);
+                setisFinished(false);
+                setisRunning(false);
+                setHelper(false);
+              }}
+            >
+              Reset
+            </Button>
           </div>
-          <Button
-            onClick={() => {
-              setDim(10);
-              setReset(!reset);
-              setisFinished(false);
-              setisRunning(false);
-              setHelper(false);
-            }}
-          >
-            Small grid
-          </Button>
-          <Button
-            onClick={() => {
-              setDim(20);
-              setReset(!reset);
-              setisFinished(false);
-              setisRunning(false);
-              setHelper(false);
-            }}
-          >
-            Medium grid
-          </Button>
-          <Button
-            onClick={() => {
-              setDim(30);
-              setReset(!reset);
-              setisFinished(false);
-              setisRunning(false);
-              setHelper(false);
-            }}
-          >
-            Big grid
-          </Button>
+          <p style={{ color: "white", margin: "0px" }}>
+            {isAddingWalls ? "Adding walls" : "Removing walls"}
+          </p>
+
+          <div className="flex-grouping">
+            <Button
+              w={width}
+              onClick={() => {
+                setDim(10);
+                setReset(!reset);
+                setisFinished(false);
+                setisRunning(false);
+                setHelper(false);
+              }}
+            >
+              Small grid
+            </Button>
+            <Button
+              w={width}
+              onClick={() => {
+                setDim(20);
+                setReset(!reset);
+                setisFinished(false);
+                setisRunning(false);
+                setHelper(false);
+              }}
+            >
+              Mid grid
+            </Button>
+            <Button
+              w={width}
+              onClick={() => {
+                setDim(30);
+                setReset(!reset);
+                setisFinished(false);
+                setisRunning(false);
+                setHelper(false);
+              }}
+            >
+              Big grid
+            </Button>
+          </div>
         </NaviWrapper>
       ) : (
         <Menu onClick={() => setisOpen(true)}>
