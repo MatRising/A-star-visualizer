@@ -93,6 +93,9 @@ function App() {
   const [isFinished, setisFinished] = useState(false);
   const [reset, setReset] = useState(false);
   const [gridState, setGridState] = useState([]);
+  const [touchStart, settouchStart] = useState({ x: 0, y: 0 });
+  const [touchEnd, settouchEnd] = useState({ x: 0, y: 0 });
+  const [helper, setHelper] = useState(false);
   let path = useRef([]);
   let start = useRef(undefined);
   let end = useRef(undefined);
@@ -166,18 +169,190 @@ function App() {
     closedSet.current = [];
     path.current = [];
   }, [reset, dim]);
-  const removeFromOpenSet = (passedSet, passedIdx) => {
-    let temp = passedSet;
-    let idx = temp.findIndex(
-      (el) => el.i === passedIdx.i && el.j === passedIdx.j
-    );
-    temp.splice(idx, 1);
-    openSet.current = temp;
-  };
-  const heuristic = (a, b) => {
-    let distance = Math.hypot(a.i - b.i, b.j - a.j);
-    //let distance = Math.abs(a.i - b.i) + Math.abs(b.j - a.j);
-    return distance;
+
+  useEffect(() => {
+    //handling mobile swipes directions and calling addWallMobile
+    // width - 100(for margin) + dim(to accout for border)/dim
+    let cellSize = (width - 100 + dim * 2) / dim;
+    const isIntercardinal =
+      Math.abs(
+        Math.abs(touchStart.x - touchEnd.x) -
+          Math.abs(touchStart.y - touchEnd.y)
+      ) < cellSize;
+
+    // handling mobile swipes
+    if (helper === true) {
+      if (isIntercardinal) {
+        //intercardinal movements here
+        if (touchStart.x - touchEnd.x < 0 && touchEnd.y - touchStart.y < 0) {
+          //Southwest -> Northeast
+          //up right direction
+          let counter = 0;
+          for (let pos = touchStart.x; pos < touchEnd.x; pos = pos + cellSize) {
+            let elementMouseIsOver = document.elementFromPoint(
+              touchStart.x + cellSize * counter,
+              touchStart.y - cellSize * counter
+            );
+            console.log(`x cords: ${touchStart.x + cellSize}`);
+            console.log(`y cords: ${touchStart.y - cellSize}`);
+            console.log(elementMouseIsOver);
+            elementMouseIsOver.click();
+            counter = counter + 1;
+          }
+        } else if (
+          touchStart.x - touchEnd.x > 0 &&
+          touchEnd.y - touchStart.y > 0
+        ) {
+          //Northeast -> Southwest
+          //up left direction
+          let counter = 0;
+          for (let pos = touchStart.x; pos > touchEnd.x; pos = pos - cellSize) {
+            let elementMouseIsOver = document.elementFromPoint(
+              touchStart.x - cellSize * counter,
+              touchStart.y + cellSize * counter
+            );
+            console.log(`x cords: ${touchStart.x - cellSize}`);
+            console.log(`y cords: ${touchStart.y - cellSize}`);
+            console.log(elementMouseIsOver);
+            elementMouseIsOver.click();
+            counter = counter + 1;
+          }
+        } else if (
+          touchStart.x - touchEnd.x > 0 &&
+          touchEnd.y - touchStart.y < 0
+        ) {
+          //Northwest -> Southeast
+          //down left direction
+          let counter = 0;
+          for (let pos = touchStart.x; pos > touchEnd.x; pos = pos - cellSize) {
+            let elementMouseIsOver = document.elementFromPoint(
+              touchStart.x - cellSize * counter,
+              touchStart.y - cellSize * counter
+            );
+            console.log(`x cords: ${touchStart.x - cellSize}`);
+            console.log(`y cords: ${touchStart.y - cellSize}`);
+            console.log(elementMouseIsOver);
+            elementMouseIsOver.click();
+            counter = counter + 1;
+          }
+        } else if (
+          touchStart.x - touchEnd.x < 0 &&
+          touchEnd.y - touchStart.y > 0
+        ) {
+          //Southeast -> Northwest
+          //donw right direction
+          let counter = 0;
+          for (let pos = touchStart.x; pos < touchEnd.x; pos = pos + cellSize) {
+            let elementMouseIsOver = document.elementFromPoint(
+              touchStart.x + cellSize * counter,
+              touchStart.y + cellSize * counter
+            );
+            console.log(`x cords: ${touchStart.x + cellSize}`);
+            console.log(`y cords: ${touchStart.y + cellSize}`);
+            console.log(elementMouseIsOver);
+            elementMouseIsOver.click();
+            counter = counter + 1;
+          }
+        }
+      } else {
+        //cardinal movements here
+        if (
+          Math.abs(touchStart.x - touchEnd.x) <
+          Math.abs(touchStart.y - touchEnd.y)
+        ) {
+          //vertical swipes
+          if (touchStart.y < touchEnd.y) {
+            //down swipe
+            for (let i = touchStart.y; i < touchEnd.y; i = i + cellSize) {
+              let elementMouseIsOver = document.elementFromPoint(
+                touchStart.x,
+                i
+              );
+              console.log(elementMouseIsOver);
+              elementMouseIsOver.click();
+            }
+          } else {
+            //up swipe
+            for (let i = touchEnd.y; i < touchStart.y; i = i + cellSize) {
+              let elementMouseIsOver = document.elementFromPoint(
+                touchStart.x,
+                i
+              );
+              console.log(elementMouseIsOver);
+              elementMouseIsOver.click();
+            }
+          }
+        } else {
+          //horizontal swipes
+          if (touchStart.x < touchEnd.x) {
+            //left swipe
+            for (let i = touchStart.x; i < touchEnd.x; i = i + cellSize) {
+              let elementMouseIsOver = document.elementFromPoint(
+                i,
+                touchStart.y
+              );
+              console.log(elementMouseIsOver);
+              elementMouseIsOver.click();
+            }
+          } else {
+            //right swipe
+            for (let i = touchEnd.x; i < touchStart.x; i = i + cellSize) {
+              let elementMouseIsOver = document.elementFromPoint(
+                i,
+                touchStart.y
+              );
+              console.log(elementMouseIsOver);
+              elementMouseIsOver.click();
+            }
+          }
+        }
+      }
+    } else if (end.current !== undefined) {
+      //so start and end dont end up as walls
+      //fix by disabling start and end points as possible walls?
+      setHelper(true);
+    }
+  }, [touchEnd]);
+  const addWallMobile = (i, j) => {
+    if (!isRunning && helper) {
+      let items = [...gridState];
+      let item = gridState[i][j];
+      item.isWall = true;
+      items[i][j] = item;
+      if (i - 1 >= 0) {
+        let idx = items[i - 1][j].neighbours.findIndex(
+          (el) => el.i === i && el.j === j
+        );
+        if (!items[i - 1][j].neighbours[idx].isWall) {
+          items[i - 1][j].neighbours[idx].isWall = true;
+        }
+      }
+      if (j + 1 < dim) {
+        let idx = items[i][j + 1].neighbours.findIndex(
+          (el) => el.i === i && el.j === j
+        );
+        if (!items[i][j + 1].neighbours[idx].isWall) {
+          items[i][j + 1].neighbours[idx].isWall = true;
+        }
+      }
+      if (i + 1 < dim) {
+        let idx = items[i + 1][j].neighbours.findIndex(
+          (el) => el.i === i && el.j === j
+        );
+        if (!items[i + 1][j].neighbours[idx].isWall) {
+          items[i + 1][j].neighbours[idx].isWall = true;
+        }
+      }
+      if (j - 1 >= 0) {
+        let idx = items[i][j - 1].neighbours.findIndex(
+          (el) => el.i === i && el.j === j
+        );
+        if (!items[i][j - 1].neighbours[idx].isWall) {
+          items[i][j - 1].neighbours[idx].isWall = true;
+        }
+      }
+      setGridState(items);
+    }
   };
 
   const addWall = (e, i, j) => {
@@ -293,7 +468,19 @@ function App() {
     }
     setGridState(items);
   };
-
+  const removeFromOpenSet = (passedSet, passedIdx) => {
+    let temp = passedSet;
+    let idx = temp.findIndex(
+      (el) => el.i === passedIdx.i && el.j === passedIdx.j
+    );
+    temp.splice(idx, 1);
+    openSet.current = temp;
+  };
+  const heuristic = (a, b) => {
+    let distance = Math.hypot(a.i - b.i, b.j - a.j);
+    //let distance = Math.abs(a.i - b.i) + Math.abs(b.j - a.j);
+    return distance;
+  };
   const aStar = () => {
     if (openSet.current.length > 0) {
       x.current = 0;
@@ -347,7 +534,6 @@ function App() {
           }
         }
       }
-      //console.log(current);
       handleChange(current.i, current.j);
     } else {
       setisRunning(false);
@@ -376,6 +562,8 @@ function App() {
     } else return "";
   };
   useInterval(aStar, isRunning ? 10 : null);
+
+  //
   return (
     <Wrapper>
       {isOpen ? (
@@ -396,6 +584,7 @@ function App() {
               setReset(!reset);
               setisFinished(false);
               setisRunning(false);
+              setHelper(false);
             }}
           >
             Reset
@@ -410,6 +599,7 @@ function App() {
               setReset(!reset);
               setisFinished(false);
               setisRunning(false);
+              setHelper(false);
             }}
           >
             Small grid
@@ -420,6 +610,7 @@ function App() {
               setReset(!reset);
               setisFinished(false);
               setisRunning(false);
+              setHelper(false);
             }}
           >
             Medium grid
@@ -430,6 +621,7 @@ function App() {
               setReset(!reset);
               setisFinished(false);
               setisRunning(false);
+              setHelper(false);
             }}
           >
             Big grid
@@ -458,12 +650,27 @@ function App() {
               {row.map((cell, j) => {
                 return (
                   <Cell
+                    onClick={() => addWallMobile(i, j)}
                     w={width - 100}
                     h={height - 100}
                     dimension={dim}
                     key={j}
                     onMouseOver={(e) => addWall(e, i, j)}
                     onMouseDown={(e) => addWall(e, i, j)}
+                    onTouchStart={(e) => {
+                      settouchStart({
+                        x: e.touches[0].clientX,
+                        y: e.touches[0].clientY,
+                      });
+                      console.log(touchStart.x, touchStart.y);
+                    }}
+                    onTouchEnd={(e) => {
+                      settouchEnd({
+                        x: e.changedTouches[0].clientX,
+                        y: e.changedTouches[0].clientY,
+                      });
+                      console.log(touchEnd.x, touchEnd.y);
+                    }}
                     color={determineColor(
                       cell.isStart,
                       cell.isEnd,
